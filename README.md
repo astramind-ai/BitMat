@@ -1,4 +1,4 @@
-# BitMat: Improving Matrix Multiplication with Triton
+# BitMat: Improving Ternary Matrix Multiplication with Triton
 
 ## 0️⃣1️⃣ Introduction
 BitMat is a Python package designed to optimize matrix multiplication operations by utilizing custom kernels written in Triton. Our package leverages the principles outlined in the "1bit-LLM Era" paper, specifically utilizing packed int8 data to enhance computational efficiency and performance in deep learning and numerical computing tasks.

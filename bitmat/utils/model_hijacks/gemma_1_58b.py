@@ -149,9 +149,9 @@ class Gemma158MLP(nn.Module):
         self.config = config
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = BitLinear(self.hidden_size, self.intermediate_size, eps=config.rms_norm_eps, bias=False, rms_dtype=torch.float32)
-        self.up_proj = BitLinear(self.hidden_size, self.intermediate_size, eps=config.rms_norm_eps, bias=False, rms_dtype=torch.float32)
-        self.down_proj = BitLinear(self.intermediate_size, self.hidden_size, eps=config.rms_norm_eps, bias=False, rms_dtype=torch.float32)
+        self.gate_proj = BitLinear(self.hidden_size, self.intermediate_size, bias=False, eps=config.rms_norm_eps, rms_dtype=torch.float32)
+        self.up_proj = BitLinear(self.hidden_size, self.intermediate_size, bias=False, eps=config.rms_norm_eps, rms_dtype=torch.float32)
+        self.down_proj = BitLinear(self.intermediate_size, self.hidden_size, bias=False, eps=config.rms_norm_eps, rms_dtype=torch.float32)
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, x):
@@ -202,10 +202,10 @@ class Gemma158Attention(nn.Module):
                 f" and `num_heads`: {self.num_heads})."
             )
 
-        self.q_proj = BitLinear(self.hidden_size, self.num_heads * self.head_dim, eps=config.rms_norm_eps, bias=config.attention_bias, rms_dtype=torch.float32)
-        self.k_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, eps=config.rms_norm_eps, bias=config.attention_bias, rms_dtype=torch.float32)
-        self.v_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, eps=config.rms_norm_eps, bias=config.attention_bias, rms_dtype=torch.float32)
-        self.o_proj = BitLinear(self.num_heads * self.head_dim, self.hidden_size, eps=config.rms_norm_eps, bias=config.attention_bias, rms_dtype=torch.float32)
+        self.q_proj = BitLinear(self.hidden_size, self.num_heads * self.head_dim, bias=config.attention_bias, eps=config.rms_norm_eps, rms_dtype=torch.float32)
+        self.k_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias, eps=config.rms_norm_eps, rms_dtype=torch.float32)
+        self.v_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias, eps=config.rms_norm_eps, rms_dtype=torch.float32)
+        self.o_proj = BitLinear(self.num_heads * self.head_dim, self.hidden_size, bias=config.attention_bias, eps=config.rms_norm_eps, rms_dtype=torch.float32)
         self.rotary_emb = Gemma158RotaryEmbedding(
             self.head_dim,
             max_position_embeddings=self.max_position_embeddings,

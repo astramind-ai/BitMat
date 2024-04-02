@@ -11,7 +11,7 @@ class BitLinear(torch.nn.Module):
     A linear layer that uses packed terniary matrix multiplication.
     """
 
-    def __init__(self, in_features, out_features, eps, bias=None, dtype=torch.float16, rms_dtype=torch.float16):
+    def __init__(self, in_features, out_features, bias=None, eps=1e-5, dtype=torch.float16, rms_dtype=torch.float16):
         super(BitLinear, self).__init__()
         self.eps = eps
         self.dtype = dtype

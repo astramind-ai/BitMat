@@ -27,6 +27,7 @@ from typing import List, Optional, Tuple, Union, Callable
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
+from bitmat import BitLinear
 from bitmat.utils.pack_model_before_save import pack_ternary_model
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -199,9 +200,9 @@ class Llama158MLP(nn.Module):
         self.config = config
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.intermediate_size
-        self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
-        self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+        self.gate_proj = BitLinear(self.hidden_size, self.intermediate_size, bias=False, eps=config.rms_norm_eps)
+        self.up_proj = BitLinear(self.hidden_size, self.intermediate_size, bias=False, eps=config.rms_norm_eps)
+        self.down_proj = BitLinear(self.intermediate_size, self.hidden_size, bias=False, eps=config.rms_norm_eps)
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, x):
@@ -269,10 +270,14 @@ class Llama158Attention(nn.Module):
                 f" and `num_heads`: {self.num_heads})."
             )
 
-        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=config.attention_bias)
-        self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-        self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
-        self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=config.attention_bias)
+        self.q_proj = BitLinear(self.hidden_size, self.num_heads * self.head_dim,
+                                bias=config.attention_bias, eps=config.rms_norm_eps)
+        self.k_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim,
+                                bias=config.attention_bias, eps=config.rms_norm_eps)
+        self.v_proj = BitLinear(self.hidden_size, self.num_key_value_heads * self.head_dim,
+                                bias=config.attention_bias, eps=config.rms_norm_eps)
+        self.o_proj = BitLinear(self.num_heads * self.head_dim, self.hidden_size,
+                                bias=config.attention_bias, eps=config.rms_norm_eps)
         self._init_rope()
 
     def _init_rope(self):

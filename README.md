@@ -60,7 +60,7 @@ For questions, issues, or support regarding BitMat, please open an issue on our 
 ## Acknowledgments
 Special thanks to the Triton community and the authors of the "1bit-LLM Era" paper for their groundbreaking work and inspiration.
 
-Also thanks to the developer od [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
+Also thanks to the developer of [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
 
 
 

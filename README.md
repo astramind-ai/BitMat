@@ -16,7 +16,7 @@ pip install bitmat-tl
 At the moment we only support **Linux** platforms. **Windows** installation is possible but is not tested.
 ## 🏁 Quick Start
 
-### High-level API (tranformers-compatible)
+### [WIP] High-level API (tranformers-compatible)
 ```python
 from transformers import AutoModelForCausalLM
 from bitmat import convert_hf_model
@@ -25,6 +25,8 @@ from bitmat import convert_hf_model
 model= AutoModelForCausalLM.from_pretrained("some-repo/some-model")
 # Convert the model to use BitLinear layers
 model = convert_hf_model(model)
+# at the moment we're working on making the modela savable with the default method(.save_pretrained())
+# Currently you would have to terniarize, then pack your layer's wights and save them with the torch method 
 ```
 ### Low-level API
 ```python

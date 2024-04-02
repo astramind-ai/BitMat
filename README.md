@@ -16,7 +16,7 @@ pip install bitmat-tl
 At the moment we only support **Linux** platforms. **Windows** installation is possible but is not tested.
 ## 🏁 Quick Start
 
-### [WIP] High-level API (tranformers-compatible)
+### High-level API (tranformers-compatible)
 ```python
 from transformers import AutoModelForCausalLM
 from bitmat import convert_hf_model
@@ -25,8 +25,6 @@ from bitmat import convert_hf_model
 model= AutoModelForCausalLM.from_pretrained("some-repo/some-model")
 # Convert the model to use BitLinear layers
 model = convert_hf_model(model)
-# at the moment we're working on making the modela savable with the default method(.save_pretrained())
-# Currently you would have to terniarize, then pack your layer's wights and save them with the torch method 
 ```
 ### Low-level API
 ```python
@@ -60,7 +58,7 @@ For questions, issues, or support regarding BitMat, please open an issue on our 
 ## Acknowledgments
 Special thanks to the Triton community and the authors of the "1bit-LLM Era" paper for their groundbreaking work and inspiration.
 
-Also thanks to the developer of [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
+Also thanks to the developer od [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
 
 
 

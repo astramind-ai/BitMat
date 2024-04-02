@@ -1,36 +1,38 @@
 import torch
 from torch import nn
-
+from tqdm import tqdm
 from ..bitlinear import BitLinear
 
-from transformers import AutoModel, GemmaForCausalLM, MistralForCausalLM, LlamaForCausalLM
+from transformers import AutoModel, GemmaConfig, MistralConfig, LlamaConfig
 
 # Importing custom hijack classes for specific models
-from .model_hijacks.gemma_hijack import HijackedGemmaForCausalLM
-from .model_hijacks.mistral_hijack import HijackedMistralForCausalLM
-from .model_hijacks.llama_hijack import HijackedLlamaForCausalLM
+from .model_hijacks.gemma_1_58b import Gemma158ForCausalLM
+from .model_hijacks.mistral_1_58b import Mistral158ForCausalLM
+from .model_hijacks.llama_1_58b import Llama158ForCausalLM
+
 
 def convert_hf_model(model: AutoModel) -> AutoModel:
     """
     Convert a Hugging Face model to use BitLinear layers instead of Linear layers.
     """
+    model_config = model.config
+    del model
+
+    # initialize a tqdm progress bar
+    pbar = tqdm(total=1, desc="Converting model to 1.58Bit")
     # Check the type of the model and initialize the corresponding hijacked model
-    if isinstance(model, GemmaForCausalLM):
-        hijacked_model = HijackedGemmaForCausalLM(model.config)
-    elif isinstance(model, MistralForCausalLM):
-        hijacked_model = HijackedMistralForCausalLM(model.config)
-    elif isinstance(model, LlamaForCausalLM):
-        hijacked_model = HijackedLlamaForCausalLM(model.config)
+    if isinstance(model_config, GemmaConfig):
+        hijacked_model = Gemma158ForCausalLM(model_config)
+    elif isinstance(model_config, MistralConfig):
+        hijacked_model = Mistral158ForCausalLM(model_config)
+    elif isinstance(model_config, LlamaConfig):
+        hijacked_model = Llama158ForCausalLM(model_config)
     else:
-        raise RuntimeError("Unsupported model type.")
+        raise RuntimeError("Unsupported model type. Please open an issue on GitHub citing the model you are using")
 
-    # Load the original model's state dict into the hijacked model
-    hijacked_model.load_state_dict(model.state_dict(), strict=False)
-
-    # Apply the BitLinear conversion to the hijacked model
-    apply_bitlinear_to_hf_model(hijacked_model)
-    print("Model converted successfully")
+    pbar.update(1)
     return hijacked_model
+
 
 def apply_bitlinear_to_hf_model(model: AutoModel, parent_name='') -> AutoModel:
     """
@@ -63,7 +65,9 @@ def apply_bitlinear_to_hf_model(model: AutoModel, parent_name='') -> AutoModel:
 
         if 'lm_head' not in full_name and isinstance(module, nn.Linear):
             # Replace Linear layer with BitLinear
-            bit_linear = BitLinear(module.in_features, module.out_features, rms_layers.get(f"{name}_rms", {}).get('eps', torch.tensor(1e-5)), module.bias is not None)
+            bit_linear = BitLinear(module.in_features, module.out_features,
+                                   rms_layers.get(f"{name}_rms", {}).get('eps', torch.tensor(1e-5)),
+                                   module.bias is not None)
             setattr(model, name, bit_linear)
         else:
             # Recursively apply to child modules

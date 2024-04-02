@@ -15,7 +15,8 @@ setup(
         'triton',
         'transformers',
         'bitsandbytes',
-        'numpy'
+        'numpy',
+        'tqdm'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

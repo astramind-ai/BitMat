@@ -7,12 +7,12 @@ def pack_ternary(x, n_element_in_one_int=4):
     """
     Pack ternary values into integers.
     x: tensor of shape (*, K, N)
-    n_element_in_one_int: int, number of elements in one integer. Default is 4.
+    n_element_in_one_int: int, number of elements in one integer
     return: tensor of shape (*, K, N // n_element_in_one_int)
     """
     assert x.shape[-1] % n_element_in_one_int == 0, "K must be divisible by n_bits"
     assert n_element_in_one_int in [4, 8, 16, 32], "n_element_in_one_int must be 4, 8, 16, 32"
-
+    device = x.device
     x_mapped = x.clone()
     x_mapped[x == -1] = 2
 
@@ -35,7 +35,7 @@ def pack_ternary(x, n_element_in_one_int=4):
     else:
         dtype = torch.int64
 
-    return x.to(dtype)
+    return x.to(dtype).to(device)
 
 
 
@@ -43,7 +43,7 @@ def unpack_ternary(x, n_bits=4):
     """
     Unpack ternary values from integers.
     x: tensor of shape (*, K // n_bits, N), where K is the total number of ternary values
-    n_bits: int, number of ternary values that each element in x represents. Default is 4.
+    n_bits: int, number of ternary values that each element in x represents
     return: tensor of shape (*, K, N)
     """
 
@@ -59,7 +59,6 @@ def unpack_ternary(x, n_bits=4):
 
     # Mappa i valori di nuovo a -1, 0, 1
     unpacked = torch.where(unpacked == 2, torch.tensor(-1, device=x.device), unpacked)
-    #unpacked = torch.where(unpacked == 3, torch.tensor(1, device=x.device), unpacked)
 
     # Riorganizza le dimensioni per ottenere il formato desiderato (*, K, N)
     return unpacked.view(*x.shape[:-1], -1)

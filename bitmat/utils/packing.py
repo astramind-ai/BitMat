@@ -7,7 +7,7 @@ def pack_ternary(x, n_element_in_one_int=4):
     """
     Pack ternary values into integers.
     x: tensor of shape (*, K, N)
-    n_element_in_one_int: int, number of elements in one integer
+    n_element_in_one_int: int, number of elements in one integer. Default is 4.
     return: tensor of shape (*, K, N // n_element_in_one_int)
     """
     assert x.shape[-1] % n_element_in_one_int == 0, "K must be divisible by n_bits"
@@ -43,7 +43,7 @@ def unpack_ternary(x, n_bits=4):
     """
     Unpack ternary values from integers.
     x: tensor of shape (*, K // n_bits, N), where K is the total number of ternary values
-    n_bits: int, number of ternary values that each element in x represents
+    n_bits: int, number of ternary values that each element in x represents. Default is 4.
     return: tensor of shape (*, K, N)
     """
 

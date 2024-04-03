@@ -1,6 +1,6 @@
 # BitMat: Improving Ternary Matrix Multiplication with Triton
 
-## ⚠️ We're currently investigating as the method .to() seems not working, hold on tight while we're fixing it
+## ⚠️ We're currently investigating as the method .to() seems not working, hold on tight while we fix it
 
 
 ## 0️⃣1️⃣ Introduction

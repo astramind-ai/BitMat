@@ -40,7 +40,7 @@ class BitMat(torch.autograd.Function):
         X = clip(round(X * scale_x), -127, 128)                 | STE
         bit matrix multiplication:
         Y = X @ w_packed.t()                                    | dot product
-        Y = Y / (scale_w * scale_x)                             | STE
+        Y = Y / scale_w / scale_x)                              | STE
         """
         if scale_w is None:
             dtype = W.dtype
@@ -60,8 +60,6 @@ class BitMat(torch.autograd.Function):
     @staticmethod
     @torch.cuda.amp.custom_bwd
     def backward(ctx, grad_output):
-        import pydevd
-        pydevd.settrace(suspend=False, trace_only_current_thread=True)
         X = ctx.saved_tensors[0]
         # get dW
         grad_W =  (grad_output.transpose(1,2) @ X).mean(dim=0)

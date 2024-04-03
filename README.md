@@ -21,32 +21,11 @@ At the moment we only support **Linux** platforms. **Windows** installation is p
 from transformers import AutoModelForCausalLM
 from bitmat import convert_hf_model
 
-# Initialize your model from an available hf model
+# Initialize your model
 model= AutoModelForCausalLM.from_pretrained("some-repo/some-model")
 # Convert the model to use BitLinear layers
 model = convert_hf_model(model)
-# Save the converted model
-model.save_pretrained('some_local_folder')
 ```
-### Loading the converted 1.58Bit Model
-To utilize the converted 1.58Bit model, such as a customized version of Mistral in this exmaple, you will need to import the specific model class from the library. Below is an example demonstrating how to load the Mistral158ForCausalLM model from a local directory:
-
-```python
-from bitmat import Mistral158ForCausalLM
-
-# Replace 'path_to_your_model' with the actual path to your model's directory
-model = Mistral158ForCausalLM.from_pretrained('path_to_your_model')
-```
-Once loaded, the model operates in two distinct modes:
-
-- Evaluation Mode: By default, the model employs quantized weights, optimizing performance for inference tasks. Activate this mode using model.eval().
-
-- Training Mode: Switching to this mode, via model.train(), allows the model to leverage full-precision weights, which is essential for training and fine-tuning processes, ensuring accurate gradient calculations and effective model updates.
-
-
-This API is **fully compatible** with the HuggingFace's Ecosystem 
-
-
 ### Low-level API
 ```python
 import torch
@@ -79,6 +58,7 @@ For questions, issues, or support regarding BitMat, please open an issue on our 
 ## Acknowledgments
 Special thanks to the Triton community and the authors of the "1bit-LLM Era" paper for their groundbreaking work and inspiration.
 
-Also thanks to the developer of [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
+Also thanks to the developer od [BitDelta](https://github.com/FasterDecoding/BitDelta/) and [UnSloth](https://github.com/unslothai/unsloth) since part of the code is based on their work.
+
 
 

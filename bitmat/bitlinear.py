@@ -11,7 +11,7 @@ class BitLinear(torch.nn.Module):
     A linear layer that uses packed terniary matrix multiplication.
     """
 
-    def __init__(self, in_features, out_features, bias=None, eps=1e-5, dtype=torch.float16, rms_dtype=torch.float16):
+    def __init__(self, in_features, out_features, bias=None, eps=1e-5, keep_rms_in_32b=False, dtype=torch.float16):
         super(BitLinear, self).__init__()
         self.eps = eps
         self.dtype = dtype
@@ -21,17 +21,26 @@ class BitLinear(torch.nn.Module):
             self.bias = torch.nn.Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
-        self.norm = RMSLayerNorm(out_features, eps, rms_dtype) # added this in favor of models like gemma that needs hp normalization
+        self.norm = RMSLayerNorm(out_features, eps) # added this in favor of models like gemma that needs hp normalization
+        self.keep_rms_in_32b = keep_rms_in_32b
         self._post_init()
 
     def to(self, *args, **kwargs):
+        # Calls the parent class' to() method
         super(BitLinear, self).to(*args, **kwargs)
 
+        # Shift weight to the specified device/target
         if isinstance(self.weight, PackedParameter):
-            self.weight.data = self.weight.data.to(*args, **kwargs)
+            # Assicurati che PackedParameter abbia un metodo to() appropriato
+            self.weight.to(*args, **kwargs)
 
+        # Shift scale factor to the specified device/target
         if self.scale_w is not None:
             self.scale_w = self.scale_w.to(*args, **kwargs)
+
+        if self.keep_rms_in_32:
+            device, dtype, non_blocking = torch._C._nn._parse_to(*args, **kwargs)
+            self.norm.to(device, torch.float32, non_blocking)
 
         return self
 
@@ -120,7 +129,7 @@ class BitLinear(torch.nn.Module):
         if self.training and isinstance(self.weight, PackedParameter):
             # Solo per sicurezza, in caso il forward venga chiamato direttamente in training senza chiamare .train()
             self.convert_weights_to_parameters()
-        x = self.norm(x)
+        x = self.norm(x.to(self.norm.weight.dtype)).to(self.weight.dtype)
         output = bitmat(self.weight, x, scale_w=self.scale_w)
         if self.bias is not None:
             output += self.bias.unsqueeze(0).expand_as(output)

@@ -19,7 +19,7 @@ def test_kernel_bitlinear():
         def forward(self, x):
             return x
 
-    x = torch.randint(-128, 128, (15, 128, 4096), dtype=torch.int8).cuda()
+    x = torch.randint(-128, 129, (15, 128, 4096), dtype=torch.int8).cuda()
     layer = BitLinear(4096, 16384, bias=False, eps=1e-5 ).cuda().to(torch.float16)
     #we need to block the rms normalization to have a deterministic output
     del layer.norm
@@ -51,7 +51,7 @@ def test_kernel_packing_unpacking():
 def test_kernel_matmul():
     from bitmat.triton_kernels.bitmat_kernel import bitmat
     x = torch.randint(-128, 128, (128, 4096), dtype=torch.int8).cuda()
-    w = torch.randint(-1, 1, [4096, 4096], dtype=torch.int8).cuda()
+    w = torch.randint(-1, 2, [4096, 4096], dtype=torch.int8).cuda()
     packed_w = pack_ternary(w, 4)
 
     start_time = time.time()
@@ -65,7 +65,7 @@ def test_kernel_matmul():
 
 def test_kernel_batchMatmul():
     x = torch.randint(-128, 128, (15, 128, 4096), dtype=torch.int8).cuda()
-    w = torch.randint(-1, 1, [16368,4096], dtype=torch.int8).cuda()
+    w = torch.randint(-1, 2, [16368,4096], dtype=torch.int8).cuda()
     packed_w = pack_ternary(w, 4)
     start_time = time.time()
     c = batched_bitmat(x, packed_w, 4)

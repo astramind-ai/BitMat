@@ -75,25 +75,3 @@ def test_kernel_batchMatmul():
     print("Pytorch Time: " + str(time.time() - torch_time))
     assert (c != matmul).sum() == 0
 
-
-def test_find_sweet_spot():
-    is_same= False
-    counter = 0
-    while not is_same:
-        counter+=1
-        x = torch.randint(-128, 128, (1, 128, 4096),
-                          dtype=torch.int8).cuda()  # TODO: batch size = 1 seems problermatic. need further investigation
-        w = torch.randint(-1, 1, [4096*3 +counter, 4096], dtype=torch.int8).cuda()
-
-        packed_w = pack_ternary(w, 4)
-        start_time = time.time()
-        c = batched_bitmat(x, packed_w, 4)
-        #print("Kenel Time: " + str(time.time() - start_time))
-        torch_time = time.time()
-        torch.cuda.empty_cache()
-        print("counter: ", counter)
-        matmul = x.to(torch.float16) @ w.to(torch.float16).t()
-        #print("Pytorch Time: " + str(time.time() - torch_time))
-        if (c != matmul).sum() == 0:
-            is_same = True
-            print("counter: ", counter)

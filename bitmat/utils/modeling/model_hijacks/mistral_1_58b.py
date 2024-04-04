@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple, Union, Callable
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from BitMat.bitmat.bitlinear import BitLinear
+from bitmat.bitlinear import BitLinear
 from bitmat.utils.pack_model_before_save import pack_ternary_model
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss

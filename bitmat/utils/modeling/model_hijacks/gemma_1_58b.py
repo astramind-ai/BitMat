@@ -25,7 +25,7 @@ import torch.utils.checkpoint
 from bitmat.utils.pack_model_before_save import pack_ternary_model
 from transformers import PretrainedConfig
 
-from BitMat.bitmat.bitlinear import BitLinear
+from bitmat.bitlinear import BitLinear
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 

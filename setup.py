@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bitmat-tl',
-    version='0.2.8',
+    version='0.3.0',
     author='Marco Lironi',
     author_email='marcolironi@astramind.ai',
     description='An efficent implementation for the paper: "The Era of 1-bit LLMs"',

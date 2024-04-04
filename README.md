@@ -35,10 +35,10 @@ model.save_pretrained('some_local_folder')
 To utilize the converted 1.58Bit model, such as a customized version of Mistral in this exmaple, you will need to import the specific model class from the library. Below is an example demonstrating how to load the Mistral158ForCausalLM model from a local directory:
 
 ```python
-from bitmat import Mistral158ForCausalLM
+from bitmat import Auto158ModelForCausalLM
 
 # Replace 'path_to_your_model' with the actual path to your model's directory
-model = Mistral158ForCausalLM.from_pretrained('path_to_your_model')
+model = Auto158ModelForCausalLM.from_pretrained('path_to_your_model')
 ```
 Once loaded, the model operates in two distinct modes:
 

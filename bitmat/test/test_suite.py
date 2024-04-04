@@ -19,7 +19,7 @@ def test_kernel_bitlinear():
         def forward(self, x):
             return x
 
-    x = torch.randint(-128, 129, (15, 128, 4096), dtype=torch.int8).cuda()
+    x = torch.randint(-128, 128, (15, 128, 4096), dtype=torch.int8).cuda()
     layer = BitLinear(4096, 16384, bias=False, eps=1e-5 ).cuda().to(torch.float16)
     #we need to block the rms normalization to have a deterministic output
     del layer.norm

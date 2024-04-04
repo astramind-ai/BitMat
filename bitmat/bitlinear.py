@@ -1,7 +1,6 @@
 import torch
 
 from .utils.bitmat import bitmat
-from .utils.packed_parameter import PackedParameter
 from .utils.rmsnorm import RMSLayerNorm
 from .utils.packing import pack_ternary, unpack_ternary
 from .utils.bitmat import terniarize
@@ -72,7 +71,7 @@ class BitLinear(torch.nn.Module):
         return self.to(device)
 
     def forward(self, x):
-        if self.training and isinstance(self.weight, PackedParameter):
+        if self.training and (self.weight.dtype == torch.int8):
             # Just to make sure the weights are in the right format even if the user forgot to call train()
             self.convert_weights_to_parameters()
         x_dtype = x.dtype

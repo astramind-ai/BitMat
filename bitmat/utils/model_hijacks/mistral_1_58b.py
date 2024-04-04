@@ -819,8 +819,6 @@ class Mistral158PreTrainedModel(PreTrainedModel):
             save_peft_format: bool = True,
             **kwargs,
     ):
-        assert self.model.dtype in [torch.float16, torch.bfloat16,
-                                    torch.int8], "Only fp16 or bf16 models are supported for saving in packed PEFT format."
 
         # Call the packing method before anything else
         pack_ternary_model(self.model)

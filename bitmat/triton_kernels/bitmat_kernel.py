@@ -123,7 +123,7 @@ def _ternary_bmm_kernel(
         ACTIVATION: tl.constexpr,
 ):
     """Kernel for computing the matmul C = A x B.
-    A has shape (B, M, K), int7
+    A has shape (B, M, K), int8
     B has shape (B, K//n_bits, N), int8, packed
     C has shape (B, M, N),
     """
@@ -206,6 +206,7 @@ def _ternary_bmm_kernel(
     c_mask = (offs_cm[:, None] < M) & (offs_cn[None, :] < N)
     tl.store(c_ptrs, c, mask=c_mask)
 
+
 def bitmat(a, b, int_per_2_bits=4, activation=""):
     """
         a: int8 tensor (M, K)
@@ -213,7 +214,9 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
         n_bits: int, number of bits that each element in b represents
     """
     # Check constraints.
-    assert a.shape[1] == b.shape[0]*int_per_2_bit, "Incompatible dimensions"
+    assert a.shape[1] == b.shape[0] * int_per_2_bits, "Incompatible dimensions"
+    assert a.dim() == 2, "Matrix A must be 2D"
+    assert b.dim() == 2, "Matrix B must be 2D"
     assert a.is_contiguous(), "A must be contiguous"
     assert b.is_contiguous(), "B must be contiguous"
     assert int_per_2_bits in [4, 8, 16, 32], "n_bits must be 4, 8, 16, 32"
@@ -221,7 +224,7 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
     _, N = b.shape
 
     # Allocates output.
-    c = torch.empty((M, N), device=a.device, dtype=torch.float16)
+    c = torch.empty((M, N), device=a.device, dtype=torch.float16).contiguous()
     # 1D launch kernel where each block gets its own program.
     grid = lambda META: (
         triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),
@@ -238,7 +241,6 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
         c.stride(0), c.stride(1),
         ACTIVATION=activation
     )
-   
     return c
 
 
@@ -272,9 +274,7 @@ def batched_bitmat(a, b, int_per_2_bits=4, activation=""):
     )
 
     # print(f"Launching kernel with M = {M}, N = {N}, K = {K}, n_bits = {n_bits}, activation = {activation}")
-    a_shape = a.shape
-    b_shape = b.shape
-    c_shape = c.shape
+
     # wrap this, otherwise triton tries to launch from cuda:0
     with torch.cuda.device(a.device):
         _ternary_bmm_kernel[grid](
@@ -287,11 +287,6 @@ def batched_bitmat(a, b, int_per_2_bits=4, activation=""):
             a.stride(0), b.stride(0), c.stride(0),
             ACTIVATION=activation
         )
-        try:
-            c[0][0][0].item()
-        except RuntimeError as err:
-            print(str(err))
-            raise RuntimeError("Illegal memory access, it means that the kernel failed most probably to OOM, try to reduce batch size or matrix size.")
     return c
 
 

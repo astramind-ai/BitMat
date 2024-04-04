@@ -828,7 +828,6 @@ class Llama158PreTrainedModel(PreTrainedModel):
             save_peft_format: bool = True,
             **kwargs,
     ):
-        assert self.model.dtype == any([torch.float16, torch.bfloat16]), "Only fp16 or bf16 models are supported for saving in packed PEFT format."
 
         # Call the packing method before anything else
         pack_ternary_model(self.model)

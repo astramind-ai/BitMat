@@ -1,4 +1,4 @@
-# Inspired by the amazing work on DeltaBit https://github.com/FasterDecoding/BitDelta/tree/main
+    # Inspired by the amazing work on DeltaBit https://github.com/FasterDecoding/BitDelta/tree/main
 import torch
 import triton
 import triton.language as tl
@@ -208,17 +208,17 @@ def _ternary_bmm_kernel(
 
 def bitmat(a, b, int_per_2_bits=4, activation=""):
     """
-        a: float tensor (M, K // n_bits)
-        b: int tensor (K, N)
+        a: float tensor (M, K)
+        b: int tensor (K // int_per_2_bit, N)
         n_bits: int, number of bits that each element in b represents
     """
     # Check constraints.
-    assert a.shape[1] * int_per_2_bits == b.shape[0], "Incompatible dimensions"
+    assert a.shape[1] == b.shape[0]*int_per_2_bit, "Incompatible dimensions"
     assert a.is_contiguous(), "A must be contiguous"
     assert b.is_contiguous(), "B must be contiguous"
     assert int_per_2_bits in [4, 8, 16, 32], "n_bits must be 4, 8, 16, 32"
-    M, _ = a.shape
-    K, N = b.shape
+    M, K = a.shape
+    _, N = b.shape
 
     # Allocates output.
     c = torch.empty((M, N), device=a.device, dtype=torch.float16)
@@ -238,12 +238,7 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
         c.stride(0), c.stride(1),
         ACTIVATION=activation
     )
-    try:
-        c[0][0].item()
-    except RuntimeError:
-        raise RuntimeError(
-            "Illegal memory access, it means that the kernel failed most probably to OOM, try to reduce batch size or matrix size.")
-
+   
     return c
 
 

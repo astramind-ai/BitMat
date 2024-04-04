@@ -30,7 +30,7 @@ model = convert_hf_model(model)
 model.save_pretrained('some_local_folder')
 ```
 ### Loading the converted 1.58Bit Model
-To utilize the converted 1.58Bit model, such as a customized version of Mistral in this exmaple, you will need to import the specific model class from the library. Below is an example demonstrating how to load the Mistral158ForCausalLM model from a local directory:
+To utilize the converted 1.58Bit model, such as a customized version of Mistral in this exmaple, you will need to load the model from the AutoClass. Below is an example demonstrating how to load the model from a local directory:
 
 ```python
 from bitmat import Auto158ModelForCausalLM

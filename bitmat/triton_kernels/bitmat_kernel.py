@@ -33,8 +33,8 @@ def _ternary_mm_kernel(
         ACTIVATION: tl.constexpr,
 ):
     """Kernel for computing the matmul C = A x B.
-    A has shape (M, K), float
-    B has shape (K//n_bits, N), int, packed boolean
+    A has shape (M, K), int8
+    B has shape (K//n_bits, N), int8, packed
     C has shape (M, N),
     """
     # -----------------------------------------------------------
@@ -123,8 +123,8 @@ def _ternary_bmm_kernel(
         ACTIVATION: tl.constexpr,
 ):
     """Kernel for computing the matmul C = A x B.
-    A has shape (B, M, K), float
-    B has shape (B, K//n_bits, N), int, packed boolean
+    A has shape (B, M, K), int7
+    B has shape (B, K//n_bits, N), int8, packed
     C has shape (B, M, N),
     """
     # -----------------------------------------------------------
@@ -208,8 +208,8 @@ def _ternary_bmm_kernel(
 
 def bitmat(a, b, int_per_2_bits=4, activation=""):
     """
-        a: float tensor (M, K)
-        b: int tensor (K // int_per_2_bit, N)
+        a: int8 tensor (M, K)
+        b: int8 packed tensor (K // int_per_2_bit, N)
         n_bits: int, number of bits that each element in b represents
     """
     # Check constraints.
@@ -245,8 +245,8 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
 
 def batched_bitmat(a, b, int_per_2_bits=4, activation=""):
     """
-        a: int tensor (B, M, K)
-        b: float tensor (N, K // n_bits)
+        a: int8 tensor (B, M, K)
+        b: int8 packed tensor (N, K // n_bits)
         n_bits: int, number of bits that each element in b represents
         returns a matrix of size B,M,N
     """

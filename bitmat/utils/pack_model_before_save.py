@@ -1,4 +1,7 @@
 from bitmat.bitlinear import BitLinear
+from bitmat.utils.bitmat import terniarize
+from bitmat.utils.packing import pack_ternary
+
 
 def pack_ternary_model(model, n_element_in_one_int=4):
     """

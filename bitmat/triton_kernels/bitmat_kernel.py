@@ -1,4 +1,4 @@
-    # Inspired by the amazing work on DeltaBit https://github.com/FasterDecoding/BitDelta/tree/main
+# Inspired by the amazing work on DeltaBit https://github.com/FasterDecoding/BitDelta/tree/main
 import torch
 import triton
 import triton.language as tl
@@ -6,10 +6,14 @@ import triton.language as tl
 
 @triton.autotune(
     configs=[
-        triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 8}, num_stages=1, num_warps=8),
-        triton.Config({'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        triton.Config({'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        triton.Config({'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 16, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
+        triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 8}, num_stages=8,
+                      num_warps=8),
+        triton.Config({'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
+        triton.Config({'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
+        triton.Config({'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 16, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
 
     ],
     key=['M', 'N', 'K'],
@@ -58,7 +62,7 @@ def _ternary_mm_kernel(
     b_ptrs = b_ptr + ((offs_k[:, None] // n_bits) * stride_bk + offs_bn[None, :] * stride_bn)
 
     # shifter is used to extract each 2 bit of each element in the int matrix
-    shifter = (offs_k % n_bits)[:,None] * 2
+    shifter = (offs_k % n_bits)[:, None] * 2
 
     accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
     for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
@@ -80,7 +84,7 @@ def _ternary_mm_kernel(
     # while the accumulator is still in FP32!
     # if ACTIVATION == "leaky_relu":
     #     accumulator = leaky_relu(accumulator)
-    c = accumulator #.to(tl.float16) Useless
+    c = accumulator  # .to(tl.float16) Useless
 
     # -----------------------------------------------------------
     # Write back the block of the output matrix C with masks.
@@ -91,11 +95,54 @@ def _ternary_mm_kernel(
     tl.store(c_ptrs, c, mask=c_mask)
 
 
+def bitmat(a, b, int_per_2_bits=4, activation=""):
+    """
+        a: int8 tensor (M, K)
+        b: int8 packed tensor (K // int_per_2_bit, N)
+        n_bits: int, number of bits that each element in b represents
+    """
+    # Check constraints.
+    assert a.shape[1] == b.shape[0] * int_per_2_bits, "Incompatible dimensions"
+    assert a.dim() == 2, "Matrix A must be 2D"
+    assert b.dim() == 2, "Matrix B must be 2D"
+    assert a.is_contiguous(), "A must be contiguous"
+    assert b.is_contiguous(), "B must be contiguous"
+    assert int_per_2_bits in [4, 8, 16, 32], "n_bits must be 4, 8, 16, 32"
+    M, K = a.shape
+    _, N = b.shape
+
+    # Allocates output.
+    c = torch.empty((M, N), device=a.device, dtype=torch.float16).contiguous()
+    # 1D launch kernel where each block gets its own program.
+    grid = lambda META: (
+        triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),
+    )
+
+    # print(f"Launching kernel with M = {M}, N = {N}, K = {K}, n_bits = {n_bits}, activation = {activation}")
+
+    _ternary_mm_kernel[grid](
+        a, b, c,
+        M, N, K,
+        int_per_2_bits,
+        a.stride(0), a.stride(1),
+        b.stride(0), b.stride(1),
+        c.stride(0), c.stride(1),
+        ACTIVATION=activation
+    )
+    return c
 
 
 @triton.autotune(
     configs=[
-        triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 8}, num_stages=1, num_warps=8),
+        triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 8}, num_stages=8,
+                      num_warps=8),
+        triton.Config({'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
+        triton.Config({'BLOCK_SIZE_M': 32, 'BLOCK_SIZE_N': 32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
+        triton.Config({'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 16, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4,
+                      num_warps=4),
+
     ],
     key=['M', 'N', 'K'],
 )
@@ -154,7 +201,8 @@ def _ternary_bmm_kernel(
 
     # Adapted from GPTQ-Triton (https://github.com/fpgaminer/GPTQ-triton)
     # b_ptrs is set up such that it repeats elements along the K axis n_bits times
-    b_ptrs = b_ptr + ((offs_k[:, None] // n_bits) * stride_bk + offs_bn[None, :] * stride_bn)
+    b_ptrs = b_ptr + (
+            (offs_k[:, None] // n_bits) * stride_bk + offs_bn[None, :] * stride_bn) + pid_batch * stride_batch_b
     # (BLOCK_SIZE_K, BLOCK_SIZE_N)
     # shifter is used to extract each bit of each element in the int matrix
     shifter = (offs_k % n_bits)[:, None] * 2
@@ -168,9 +216,9 @@ def _ternary_bmm_kernel(
     for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
         # Load the next block of A and B, generate a mask by checking the K dimension.
         # If it is out of bounds, set it to 0.
-        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K, other=0.0)
+        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K + BLOCK_SIZE_K - 1, other=0.0)
         # b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0)
-        b = tl.load(b_ptrs)
+        b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0)
 
         # Convert B from int to a.dtype, for each bit in B, 0 becomes -1.0, 1 becomes 1.0
         # b: (BLOCK_SIZE_K, BLOCK_SIZE_N)
@@ -237,7 +285,6 @@ def bitmat(a, b, int_per_2_bits=4, activation=""):
         ACTIVATION=activation
     )
     return c
-
 
 
 def batched_bitmat(a, b, int_per_2_bits=4, activation=""):

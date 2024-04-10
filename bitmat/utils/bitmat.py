@@ -2,7 +2,7 @@ from typing import Tuple
 
 import torch
 
-from ..triton_kernels.bitmat_kernel import batched_bitmat
+from ..triton_kernels.bitmat_kernel import bitmat_
 from .packing import pack_ternary
 
 
@@ -53,7 +53,7 @@ class BitMat(torch.autograd.Function):
             return y / scale_w / scale_x
         else:
             X, scale_x = quantize_activations(X)
-            y = batched_bitmat(X, W)
+            y = bitmat_(X, W.t().contiguous())
             return y / scale_w / scale_x
 
 

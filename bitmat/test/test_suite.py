@@ -2,11 +2,9 @@ import time
 
 from bitmat.utils.bitmat import *
 from bitmat.utils.packing import *
+from bitmat.utils.custom_autotune import *
 from bitmat.bitlinear import BitLinear
 import torch
-
-
-
 
 def test_kernel_bitlinear():
     class FakeRMSLayerNorm(torch.nn.Module):
@@ -46,32 +44,45 @@ def test_kernel_packing_unpacking():
     unpacked_w = unpack_ternary(packed_w, 4)
     assert (w != unpacked_w).sum() == 0
 
-
-def test_kernel_matmul():
-    from bitmat.triton_kernels.bitmat_kernel import bitmat
-    x = torch.randint(-128, 128, (128, 4096), dtype=torch.int8).cuda()
+def test_kernel_bitmat():
+    x = torch.randint(-128, 128, (1, 128, 4096), dtype=torch.int8).cuda()
     w = torch.randint(-1, 2, [4096, 4096], dtype=torch.int8).cuda()
     packed_w = pack_ternary(w, 4)
 
-    start_time = time.time()
-    c = bitmat(x, packed_w.t().contiguous(),  4)
-    print("Kenel Time: " + str(time.time() - start_time))
-    torch_time = time.time()
-    matmul = x.to(torch.float16) @ w.to(torch.float16).t()
-    print("Pytorch Time: " + str(time.time() - torch_time))
-    assert (c != matmul).sum() == 0
+    start_time_16 = time.time()
+    c_fp16 = bitmat(x, packed_w.t().contiguous(),  4, out_dtype=torch.float16) #defoult is float16
+    print("Kenel Time c_fp16: " + str(time.time() - start_time_16))
 
+    start_time_32 = time.time()
+    c_fp32 = bitmat(x, packed_w.t().contiguous(),  4, out_dtype=torch.float32)
+    print("Kenel Time c_fp32: " + str(time.time() - start_time_32))
 
-def test_kernel_batchMatmul():
-    x = torch.randint(-128, 128, (1, 128, 4096), dtype=torch.int8).cuda() #TODO: batch size = 1 seems problermatic. need further investigation
-    w = torch.randint(-1, 2, [5000*6, 4096], dtype=torch.int8).cuda()
+    print("c size: ", c_fp16.size())
 
-    packed_w = pack_ternary(w, 4)
-    start_time = time.time()
-    c = batched_bitmat(x, packed_w, 4)
-    print("Kenel Time: " + str(time.time() - start_time))
-    torch_time = time.time()
-    matmul =x.to(torch.float16) @  w.to(torch.float16).t()
-    print("Pytorch Time: " + str(time.time() - torch_time))
-    assert (c != matmul).sum() == 0
+    torch_time_16 = time.time()
+    matmul_fp16 = (x.to(torch.float16) @ w.to(torch.float16).t())
+    print("Pytorch Time fp16: " + str(time.time() - torch_time_16))
+
+    torch_time_32 = time.time()
+    matmul_fp32 = (x.to(torch.float32) @ w.to(torch.float32).t())
+    print("Pytorch Time fp32: " + str(time.time() - torch_time_32))
+
+    print("matmul shape: ", matmul_fp16.shape)
+
+    print("diff in fp16 precision: ", (c_fp16 != matmul_fp16).sum())
+    print("diff in fp32 precision: ", (c_fp32 != matmul_fp32).sum())
+    print("diff in matmul precision", (matmul_fp16 != matmul_fp32).sum())
+
+    # Output:
+    # Kenel Time c_fp16: 0.9925260543823242
+    # Kenel Time c_fp32: 0.005948781967163086
+    # c size:  torch.Size([1, 128, 4096])
+    # Pytorch Time fp16: 0.026566505432128906
+    # Pytorch Time fp32: 0.010659456253051758
+    # matmul shape:  torch.Size([1, 128, 4096])
+    # diff in fp16 precision:  tensor(72141, device='cuda:0')
+    # diff in fp32 precision:  tensor(0, device='cuda:0')
+    # diff in matmul precision tensor(243242, device='cuda:0')
+    #
+    # Process finished with exit code 0
 

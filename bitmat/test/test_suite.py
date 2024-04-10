@@ -1,10 +1,10 @@
 import time
-
+import torch
 from bitmat.utils.bitmat import *
 from bitmat.utils.packing import *
 from bitmat.utils.custom_autotune import *
 from bitmat.bitlinear import BitLinear
-import torch
+from ..triton_kernels.bitmat_kernel import bitmat_
 
 def test_kernel_bitlinear():
     class FakeRMSLayerNorm(torch.nn.Module):
@@ -16,7 +16,7 @@ def test_kernel_bitlinear():
         def forward(self, x):
             return x
 
-    x = torch.randint(-128, 128, (15, 128, 4096), dtype=torch.int8).cuda()
+    x = torch.randint(-128, 128, (1, 128, 4096), dtype=torch.int8).cuda()
     layer = BitLinear(4096, 16384, bias=False, eps=1e-5 ).cuda().to(torch.float16)
     #we need to block the rms normalization to have a deterministic output
     del layer.norm
@@ -37,6 +37,7 @@ def test_kernel_bitlinear():
 
     assert (c != torch_c).sum() == 0
 
+test_kernel_bitlinear()
 
 def test_kernel_packing_unpacking():
     w = torch.randint(-1, 2, [4096, 4096], dtype=torch.int8).cuda()
@@ -45,16 +46,16 @@ def test_kernel_packing_unpacking():
     assert (w != unpacked_w).sum() == 0
 
 def test_kernel_bitmat():
-    x = torch.randint(-128, 128, (1, 128, 4096), dtype=torch.int8).cuda()
+    x = torch.randint(-128, 128, (2, 128, 4096), dtype=torch.int8).cuda()
     w = torch.randint(-1, 2, [4096, 4096], dtype=torch.int8).cuda()
     packed_w = pack_ternary(w, 4)
 
     start_time_16 = time.time()
-    c_fp16 = bitmat(x, packed_w.t().contiguous(),  4, out_dtype=torch.float16) #defoult is float16
+    c_fp16 = bitmat_(x, packed_w.t().contiguous(),  4, out_dtype=torch.float16) #defoult is float16
     print("Kenel Time c_fp16: " + str(time.time() - start_time_16))
 
     start_time_32 = time.time()
-    c_fp32 = bitmat(x, packed_w.t().contiguous(),  4, out_dtype=torch.float32)
+    c_fp32 = bitmat_(x, packed_w.t().contiguous(),  4, out_dtype=torch.float32)
     print("Kenel Time c_fp32: " + str(time.time() - start_time_32))
 
     print("c size: ", c_fp16.size())
@@ -72,17 +73,19 @@ def test_kernel_bitmat():
     print("diff in fp16 precision: ", (c_fp16 != matmul_fp16).sum())
     print("diff in fp32 precision: ", (c_fp32 != matmul_fp32).sum())
     print("diff in matmul precision", (matmul_fp16 != matmul_fp32).sum())
+    print("diff in kernel precision", (c_fp16 != c_fp32).sum())
 
-    # Output:
-    # Kenel Time c_fp16: 0.9925260543823242
-    # Kenel Time c_fp32: 0.005948781967163086
-    # c size:  torch.Size([1, 128, 4096])
-    # Pytorch Time fp16: 0.026566505432128906
-    # Pytorch Time fp32: 0.010659456253051758
-    # matmul shape:  torch.Size([1, 128, 4096])
-    # diff in fp16 precision:  tensor(72141, device='cuda:0')
-    # diff in fp32 precision:  tensor(0, device='cuda:0')
-    # diff in matmul precision tensor(243242, device='cuda:0')
-    #
-    # Process finished with exit code 0
+# x = torch.randint(-128, 128, (2, 128, 4096), dtype=torch.int8).cuda()
+# w = torch.randint(-1, 2, [4096, 4096], dtype=torch.int8).cuda()
+# Output:
+# Kenel Time c_fp16: 0.7801363468170166
+# Kenel Time c_fp32: 0.008198738098144531
+# c size:  torch.Size([2, 128, 4096])
+# Pytorch Time fp16: 0.0733022689819336
+# Pytorch Time fp32: 0.003717660903930664
+# matmul shape:  torch.Size([2, 128, 4096])
+# diff in fp16 precision:  tensor(230923, device='cuda:0')
+# diff in fp32 precision:  tensor(0, device='cuda:0')
+# diff in matmul precision tensor(542174, device='cuda:0')
+# diff in kernel precision tensor(392754, device='cuda:0')
 

@@ -57,6 +57,18 @@ layer = BitLinear(in_features=1024, out_features=512, bias=True, eps=1e-5)
 # You can use the layer as a normal torch.nn.Linear layer
 ```
 
+## 📊 Results
+
+It can be observed that the performance of the custom matmul to 
+handle the multiplication of ternary matrices is better for higher precision. 
+This may be due to the optimized process within the GPU.
+
+
+**(left) 16-bit precision, (right) 32-bit precision**
+
+<img src="img/fp16.png" width="300" alt="Local Image"> <img src="img/fp32.png" width="300" alt="Local Image">
+
+
 ## 🫱🏼‍🫲🏽 Contributing
 We welcome contributions from the community, whether it's adding new features, improving documentation, or reporting bugs. Please refer to our contribution guidelines before making a pull request.
 

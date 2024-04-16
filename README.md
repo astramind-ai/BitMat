@@ -74,7 +74,7 @@ This may be due to the optimized process within the GPU.
 
 **(left) 16-bit precision, (right) 32-bit precision**
 
-<img src="img/fp16.png" width="300" alt="Local Image"> <img src="img/fp32.png" width="300" alt="Local Image">
+ <img src="https://github.com/astramind-ai/BitMat/assets/121761685/5f768ce3-c947-4be6-82f0-5346f78d6645)" width="400" alt="Graph #1"> <img src="https://github.com/astramind-ai/BitMat/assets/121761685/5f768ce3-c947-4be6-82f0-5346f78d6645" width="400" alt="Graph #2">
 
 
 ## 🫱🏼‍🫲🏽 Contributing

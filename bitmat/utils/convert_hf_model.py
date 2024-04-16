@@ -6,9 +6,9 @@ from ..bitlinear import BitLinear
 from transformers import AutoModel, GemmaConfig, MistralConfig, LlamaConfig
 
 # Importing custom hijack classes for specific models
-from .model_hijacks.gemma_1_58b import Gemma158ForCausalLM
-from .model_hijacks.mistral_1_58b import Mistral158ForCausalLM
-from .model_hijacks.llama_1_58b import Llama158ForCausalLM
+from .modeling.model_hijacks.gemma_1_58b import Gemma158ForCausalLM
+from .modeling.model_hijacks.mistral_1_58b import Mistral158ForCausalLM
+from .modeling.model_hijacks.llama_1_58b import Llama158ForCausalLM
 
 
 def convert_hf_model(model: AutoModel) -> AutoModel:

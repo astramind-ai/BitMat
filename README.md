@@ -71,10 +71,12 @@ It can be observed that the performance of the custom matmul to
 handle the multiplication of ternary matrices is better for higher precision. 
 This may be due to the optimized process within the GPU.
 
+ 16-bit precision
+ <img src="img/fp16.png" alt="drawing" width="500"/>
 
-**(left) 16-bit precision, (right) 32-bit precision**
+ 32-bit precision
+ <img src="img/fp32.png" alt="drawing" width="500"/>
 
- <img src="https://github.com/astramind-ai/BitMat/assets/121761685/5f768ce3-c947-4be6-82f0-5346f78d6645)" width="400" alt="Graph #1"> <img src="https://github.com/astramind-ai/BitMat/assets/121761685/5f768ce3-c947-4be6-82f0-5346f78d6645" width="400" alt="Graph #2">
 
 
 ## 🫱🏼‍🫲🏽 Contributing

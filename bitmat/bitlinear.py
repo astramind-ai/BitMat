@@ -22,7 +22,7 @@ class BitLinear(torch.nn.Module):
             self.bias = torch.nn.Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
-        self.norm = RMSLayerNorm(out_features, eps) # added this in favor of models like gemma that needs hp normalization
+        self.norm = RMSLayerNorm(in_features, eps)
         self.keep_rms_in_32b = keep_rms_in_32b
         self._post_init()
 

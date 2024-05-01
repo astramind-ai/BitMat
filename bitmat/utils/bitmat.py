@@ -12,7 +12,7 @@ def terniarize(weights: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     dtype = weights.dtype
     scale = 1 / torch.max(weights.abs().mean(), torch.tensor(1e-5))
-    return torch.clamp((weights * scale).to(torch.int8), -1, 1), scale.to(dtype)
+    return torch.clamp((weights * scale).round().to(torch.int8), -1, 1), scale.to(dtype)
 
 def quantize_activations(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
@@ -20,7 +20,7 @@ def quantize_activations(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     dtype = x.dtype
     scale = (127 / torch.max(x.abs().max(dim=-1).values, torch.tensor(1e-5))).unsqueeze(-1)
-    return torch.clamp((x * scale), -127, 128).to(torch.int8), scale.to(dtype)
+    return torch.clamp((x * scale).round(), -127, 128).to(torch.int8), scale.to(dtype)
 
 
 class BitMat(torch.autograd.Function):

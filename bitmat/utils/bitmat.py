@@ -1,10 +1,11 @@
 from typing import Tuple
-
+import os
 import torch
 
 from ..triton_kernels.bitmat_kernel import bitmat_
 from .packing import pack_ternary
 
+BITMAT_QUANT_ACTIVATIONS = not os.getenv("BITMAT_QUANT_ACTIVATIONS","True").lower() in ('false', '0', 'f')
 
 def terniarize(weights: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
@@ -19,14 +20,14 @@ def quantize_activations(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     Quantizes the activations and returns the scale for each row.
     """
     dtype = x.dtype
-    scale = (127 / torch.max(x.abs().max(dim=-1).values, torch.tensor(1e-5))).unsqueeze(-1)
+    scale = (128 / torch.max(x.abs().max(dim=-1).values, torch.tensor(1e-5))).unsqueeze(-1)
     return torch.clamp((x * scale), -128, 127).to(torch.int8), scale.to(dtype)
 
 
 class BitMat(torch.autograd.Function):
     @staticmethod
     @torch.cuda.amp.custom_fwd
-    def forward(ctx, W, X, scale_w=None):
+    def forward(ctx, W, X, scale_w=None,quant_activations=True):
         """
         During the forward pass, we ternarize the weights, pack them and then quantize the activations.
         We then perform the bit matrix multiplication and return the scaled results.
@@ -42,19 +43,27 @@ class BitMat(torch.autograd.Function):
         Y = X @ w_packed.t()                                    | dot product
         Y = Y / scale_w / scale_x)                              | STE
         """
+        if quant_activations:
+            X, scale_x = quantize_activations(X)
+            
         if scale_w is None:
             dtype = W.dtype
             W, scale_w = terniarize(W)
             #packed_w = pack_ternary(W, 4) -> this is actually not efficent atm
             ctx.save_for_backward(X)
-            X, scale_x = quantize_activations(X)
+            
             y = X.to(dtype) @ W.to(dtype).t()
             #y = batched_bitmat(X, packed_w) -> this is actually not efficent atm
-            return y / scale_w / scale_x
+            out = y / scale_w
         else:
-            X, scale_x = quantize_activations(X)
+            
             y = bitmat_(X, W.t().contiguous())
-            return y / scale_w / scale_x
+            out = y / scale_w
+        
+        if quant_activations:
+            out = out / scale_x
+        
+        return out
 
 
     @staticmethod
@@ -65,5 +74,6 @@ class BitMat(torch.autograd.Function):
         grad_W =  (grad_output.transpose(1,2) @ X).mean(dim=0)
         return grad_W, None, None
 
-def bitmat(W: torch.Tensor, X: torch.Tensor, scale_w) -> torch.Tensor:
-    return BitMat.apply(W, X, scale_w)
+def bitmat(W: torch.Tensor, X: torch.Tensor, scale_w,quant_activations=None) -> torch.Tensor:
+    quant_activations =  quant_activations if quant_activations is not None else BITMAT_QUANT_ACTIVATIONS
+    return BitMat.apply(W, X, scale_w,quant_activations=quant_activations)

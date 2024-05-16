@@ -3,7 +3,7 @@ from torch import nn
 from tqdm import tqdm
 from ..bitlinear import BitLinear
 
-from transformers import AutoModel, GemmaConfig, MistralConfig, LlamaConfig
+from transformers import AutoModel, GemmaConfig, MistralConfig, LlamaConfig, AutoModelForCausalLM
 
 # Importing custom hijack classes for specific models
 from .modeling.model_hijacks.gemma_1_58b import Gemma158ForCausalLM
@@ -28,7 +28,12 @@ def convert_hf_model(model: AutoModel) -> AutoModel:
     elif isinstance(model_config, LlamaConfig):
         hijacked_model = Llama158ForCausalLM(model_config)
     else:
-        raise RuntimeError("Unsupported model type. Please open an issue on GitHub citing the model you are using")
+        try:
+            hijacked_model = AutoModelForCausalLM(model_config)
+            hijacked_model = apply_bitlinear_to_hf_model(hijacked_model)
+        except Exception as e:
+            print(str(e))
+            raise RuntimeError("Unsupported model type. Please open an issue on GitHub citing the model you are using")
 
     pbar.update(1)
     return hijacked_model

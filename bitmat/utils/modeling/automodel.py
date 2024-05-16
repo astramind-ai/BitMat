@@ -22,6 +22,7 @@ class Auto158ModelForCausalLM:
             raise ValueError(
                 f"The model {args[0]} was not found, this mean it has not been mapped yet, please open an issue on the github repository")
 
+        print(f"model CLASS {model_class_name}")
         # Ottieni la classe del modello utilizzando il suo nome
         model_class = globals()[model_class_name]
 

@@ -166,7 +166,7 @@ class Fast_RMS_Layernorm(torch.autograd.Function):
             num_warps  = ctx.num_warps,
         )
         dX = dY.view(*shape)
-        return dX, None, None, None
+        return None, dX, None, None
     pass
 pass
 

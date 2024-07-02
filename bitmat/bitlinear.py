@@ -76,7 +76,7 @@ class BitLinear(torch.nn.Module):
             self.convert_weights_to_parameters()
         x_dtype = x.dtype
         x = self.norm(x.to(self.norm.weight.dtype)).to(x_dtype)
-        output = bitmat(self.weight.data, x, scale_w=self.scale_w)
+        output = bitmat(self.weight, x, scale_w=self.scale_w)
         if self.bias is not None:
             output += self.bias.unsqueeze(0).expand_as(output)
         return output

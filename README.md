@@ -1,3 +1,5 @@
+# ⚠️ This repo has been archived in favor of better packages like [Microsoft's BitBlas](https://github.com/microsoft/BitBLAS.git) 
+
 # BitMat: Improving Ternary Matrix Multiplication with Triton
 
 ## Currently supported models
